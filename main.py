@@ -12,10 +12,12 @@ name=''
 #pyttsx initialisation
 engine= pyttsx3.init('sapi5')
 voices=engine.getProperty('voices')
-engine.setProperty('voice', voices[1].id)
+engine.setProperty('voice', voices[0].id)
 
 #Functions to use repetitively
-def askai(q): 
+
+def askai(q):#Process the user querry and provide output
+    global client 
     try:   
         response = client.models.generate_content(
         model="gemini-2.0-flash",    
@@ -24,23 +26,30 @@ def askai(q):
         contents=q
         )
         return response.text.replace('*','')
-    except:
-        response = client.models.generate_content(
-        model="gemini-1.5-pro",    
-        config=types.GenerateContentConfig(system_instruction='You are Aiva a reliable ai assistant who provides consize and to the point answers as much as possible,and be soothing/friendly.',
-        temperature=1),
-        contents=q
-        )
-        return response.text.replace('*','')
+    except Exception as e:
+        print('1: '+str(e))
+        try:            
+            client = genai.Client(api_key=api_key2)
+            api_key,api_key2=api_key2,api_key
 
-def speak(txt):
+            response = client.models.generate_content(
+            model="gemini-2.0-flash",    
+            config=types.GenerateContentConfig(system_instruction='You are Aiva a reliable ai assistant who provides consize and to the point answers as much as possible,and be soothing/friendly.',
+            temperature=1),
+            contents=q
+            )
+            return response.text.replace('*','')
+        except Exception as e:
+            print('2: '+str(e))
+
+def speak(txt):#text to speech
     engine.say(txt)
     print('AI   : '+txt+'\n')
     engine.runAndWait()    
 
-def tc():    
+def tc():  #take_voice_command(speech to text)  
     r,order=sr.Recognizer(),''
-    #r.energy_threshold=100
+    #r.energy_threshold=50
     #r.pause_threshold=0.5
 
     with sr.Microphone() as source:        
@@ -48,7 +57,7 @@ def tc():
         print('Listening.........')        
         audio=r.listen(source)        
         try:
-            order=r.recognize_sphinx(audio)
+            order=r.recognize_google(audio,language='en-IN')
             print('USER : '+ order)
 
         except Exception :
@@ -56,7 +65,7 @@ def tc():
 
     return order
 
-def intro():
+def intro():#Greet user
     speak('Hello sir, what\'s your name ?')
     global name
     name=tc().title()
@@ -65,6 +74,7 @@ def intro():
 # Program starts here
 print('\n------------------------------------------------------------------------------------------------------------------')
 intro()
+
 while True:
     order=tc().lower()
 
@@ -110,7 +120,7 @@ while True:
         sys.exit()
 
     elif (order==''):
-        pass
+     pass
 
     else:       
         speak(askai(order))
